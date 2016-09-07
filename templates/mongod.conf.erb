@@ -1,0 +1,19 @@
+systemLog:
+  destination: file
+  logAppend: true
+  path: "/var/log/mongodb.log"
+
+storage:
+  dbPath: "/data/db"
+  journal:
+    enabled: true
+
+processManagement:
+  fork: true  # fork and run in background
+  pidFilePath: "/var/run/mongodb/mongod.pid"  # location of pidfile
+
+net:
+  port: 27017
+
+replication:
+  replSetName: "<%= @mongo_set %>"

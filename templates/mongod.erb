@@ -1,0 +1,12 @@
+/var/log/mongodb/*.log {
+    daily
+    rotate 7
+    copytruncate
+    compress
+    dateext
+    missingok
+    delaycompress
+    postrotate
+    /usr/bin/killall -SIGUSR1 mongod
+    endscript
+}

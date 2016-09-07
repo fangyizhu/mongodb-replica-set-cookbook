@@ -1,0 +1,18 @@
+{
+    "Comment": "Update record <%= @mongo_dns %> to <%= @new_ip %> for instance <%= @instance_id %>",
+    "Changes": [
+        {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "<%= @mongo_dns %>.",
+                "Type": "A",
+                "TTL": 180,
+                "ResourceRecords": [
+                    {
+                        "Value": "<%= @new_ip %>"
+                    }
+                ]
+            }
+        }
+    ]
+}
