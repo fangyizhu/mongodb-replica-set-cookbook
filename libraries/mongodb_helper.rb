@@ -70,20 +70,16 @@ module MongoDB
 
     def get_current_instance_tag(region, mongo_set, instance_id)
       unless instance_has_tag?(region, instance_id)
-        # Get Total desired instance for Auto Scaling Groups
         autoscaling_description = get_autoscaling_description(region, mongo_set)
         desired_capacity = autoscaling_description.desired_capacity
         puts("desired_capacity: #{desired_capacity}")
 
-        # Get a list of tags in use
         existing_mongo_tags = get_existing_mongo_tags(region, mongo_set, MONGOTAG)
         puts("existing_mongo_tags: #{existing_mongo_tags}")
 
-        # Prepare list of possible tags
         tag_collections = make_tag_collection(desired_capacity)
         puts("tag_collections: #{tag_collections}")
 
-        # Get a list of available tags
         tag = pick_one_available_tag(tag_collections, existing_mongo_tags)
         puts("mongo_id tag value: #{tag}")
       end
