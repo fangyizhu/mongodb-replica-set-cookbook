@@ -7,19 +7,34 @@ end.run_action(:install)
 require 'aws-sdk'
 Chef::Recipe.send(:include, MongoDB::Helper)
 
-# Get current instance ID
+# Choose current instance id
 #-----------------------------------------------------
 instance_id = `curl http://169.254.169.254/latest/meta-data/instance-id`
+replica_set = get_instance_autoscaling_group(node['region'], instance_id)
 
-# Tag current instance
-#-----------------------------------------------------
-tag = get_current_instance_tag(node['region'], node['mongo_set'], instance_id)
+# Randomize waiting time to best avoid ID conflict
+wait_time = rand(1..60)
+sleep(wait_time)
+mongo_id = pick_current_instance_id(node['region'], instance_id)
+sleep(wait_time)
+
+while get_existing_mongo_ids(node['region'], replica_set).include? mongo_id do
+  puts "#{mongo_id} already exists in ASG. Picking a new one."
+  mongo_id = pick_current_instance_id(node['region'], instance_id)
+  sleep(15)
+end
+
+tag_name(node['region'], instance_id, replica_set + '-' + mongo_id)
+
 
 # Create service script
 #-----------------------------------------------------
 ip_address = `curl http://169.254.169.254/latest/meta-data/local-ipv4`
-mongo_dns = "#{node['mongo_set']}-#{tag}.#{node['cluster_dns']}"
+mongo_dns = "#{replica_set}-#{mongo_id}.#{node['cluster_dns']}"
 
+
+# update DNS record for Server
+#-----------------------------------------------------
 template '/tmp/dns_upsert.json' do
   source 'dns_upsert.json.erb'
   mode   '0744'
@@ -29,8 +44,6 @@ template '/tmp/dns_upsert.json' do
   action :create
 end
 
-# update DNS record for Server
-#-----------------------------------------------------
 execute 'upsert_dns_in_route53' do
   command "aws route53 change-resource-record-sets --hosted-zone-id #{node['hosted_zone_id']} --change-batch file:///tmp/dns_upsert.json"
   action :run
@@ -163,7 +176,7 @@ end
 template '/etc/mongod.conf' do
   source 'mongod.conf.erb'
   mode '0744'
-  variables :mongo_set => node['mongo_set']
+  variables :rpl_set => replica_set
 end
 
 # Create mongo init.d event log file for booting and stopping events
@@ -176,7 +189,7 @@ file '/var/log/mongoevents' do
 end
 
 # Create mongodb.log and change the owner to mongod
-#-----------------------------------------------------
+#---------------git --------------------------------------
 file '/var/log/mongodb.log' do
   mode '0755'
   owner 'mongod'
@@ -191,6 +204,13 @@ template '/etc/init.d/mongod' do
   mode '0744'
 end
 
+# Set slaveOK in mongorc.js
+#-----------------------------------------------------
+template '/etc/mongorc.js' do
+  source 'mongorc.js.erb'
+  mode '0744'
+end
+
 # Start Mongodb
 #-----------------------------------------------------
 service 'mongod' do
@@ -199,16 +219,20 @@ end
 
 # Initiate a replica set, or add self to an existing one
 #-----------------------------------------------------
-rs_command = replica_set_command(node['region'], node['mongo_set'], tag, mongo_dns)
-puts "tag:"
-puts tag
-puts "mongo dns:"
-puts mongo_dns
+rs_command = replica_set_command(node['region'], replica_set, mongo_dns)
+puts(rs_command)
 execute 'replica_set' do
   command rs_command
   action :run
 end
 
-# Tag self once being added to replica set
+# Mark instance in replica set by putting a mongo_id tag on it
 #-----------------------------------------------------
-tag_self(node['region'], instance_id, tag, node['mongo_set'])
+ruby_block 'tag_mongo_id' do
+  block do
+    ec2 = Aws::EC2::Client.new(region: node['region'])
+    ec2.create_tags(resources: [instance_id], tags: [{key: 'mongo-id', value: mongo_id}])
+  end
+  action :run
+end
+

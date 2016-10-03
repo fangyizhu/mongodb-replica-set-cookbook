@@ -1,8 +1,4 @@
-# The name of your replica set, this should also be the name of the autoscaling group
-default['mongo_set']=
-
-# cluster_dns should be something like "somecompany.com", the final DNS record will be:
-# mongo_set.cluster_dns
+# cluster_dns should be something like "somecompany.com"
 default['cluster_dns']=
 
 # AWS Zone
