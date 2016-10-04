@@ -6,10 +6,10 @@
 Access to AWS EC2, Autoscaling group, Route 53 and S3. Proper traffic rules and roles configured.
 
 # Attributes
-This cookbook is supposed to work with AWS Autoscaling group. When one node goes down, the autoscaling group would 
-automatically stand up a new node, and this cookbook will perform all the steps required to add the new node to 
-the replica set automatically. Thus a replica set can set up itself and self-heal corrupted nodes without manual setup.<br />
-The cookbook assumes and will make replica set name, autoscaling group name, instance name prefix, DNS record prefix
+This cookbook works with AWS Autoscaling group to set up a self-healing replica set. When one node goes down, the autoscaling group would 
+automatically stand up a new node, and this cookbook performs all the steps required to add the new node to 
+the replica set including set up DNS entry in Route 53.<br />
+The cookbook assumes and will make replica set name, autoscaling group name, instance name prefix, Route 53 DNS record prefix
 identical.
 
 # Usage
