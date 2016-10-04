@@ -1,3 +1,5 @@
+<a href="https://codeclimate.com/github/fangyizhu/mongodb-replica-set-cookbook"><img src="https://codeclimate.com/github/fangyizhu/mongodb-replica-set-cookbook/badges/gpa.svg" /></a>
+
 # MongoDB Replica Set Cookbook
 
 # Requirements
